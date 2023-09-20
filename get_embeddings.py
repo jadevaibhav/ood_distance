@@ -1,22 +1,43 @@
 import torch
 import cv2
+import os
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultPredictor
 from detectron2.modeling import build_model
 from detectron2.utils.visualizer import Visualizer
 from detectron2 import model_zoo
+from detectron2.data import build_detection_train_loader,get_detection_dataset_dicts
+from detectron2.data.datasets import register_coco_instances
+import pickle
+
+
+# IMP: old version of detectron2 does not support batching in test loader, to run this use a seperate env with latest detectron2
+
+#register dataset
+def register_esmart_wip(root = "/home/vaibhav/Desktop/stud/datasets/esmart/"):
+        things_classes = [
+                        "bicycle","bus","car","lane","lanes","motorcycle","person",
+                        "roadwork_tcd","speed_limit","stop sign", "traffic light",
+                        "truck"
+                          ]
+        name = 'esmart_wip'
+        metadata = {"thing_classes":things_classes}
+        register_coco_instances(
+                        name,
+                        metadata,
+                        os.path.join(root, 'labels_mod.json'),
+                        os.path.join(root, 'data/'),
+                    )
+        
+
+
 
 class CustomPredictor(DefaultPredictor):
 
     def __call__(self, original_image):
         with torch.no_grad():  # https://github.com/sphinx-doc/sphinx/issues/4258
             # Apply pre-processing to image.
-            if self.input_format == "RGB":
-                # whether the model expects BGR inputs or RGB
-                original_image = original_image[:, :, ::-1]
-            height, width = original_image.shape[:2]
-            image = self.aug.get_transform(original_image).apply_image(original_image)
-            image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+            [image,height,width,gt] = original_image
 
             inputs = {"image": image, "height": height, "width": width}
             
@@ -34,7 +55,8 @@ class CustomPredictor(DefaultPredictor):
 
             # Get detected boxes and extract corresponding feature embeddings
             pred_boxes = instances.pred_boxes  # Prediction boxes (x1, y1, x2, y2)
-            feature_extractor = self.model.roi_heads.box_pooler  # ROI feature extractor
+            roi_pooler = self.model.roi_heads.box_pooler  # ROI feature extractor
+            feature_extractor = self.model.roi_heads.box_head
 
             # Convert prediction boxes to proper format for ROI pooling
             #num_boxes = pred_boxes.shape[0]
@@ -42,47 +64,87 @@ class CustomPredictor(DefaultPredictor):
 
             # Extract feature embeddings from the feature map for each detected box
             with torch.no_grad():
-                roi_features = feature_extractor([features[0][f] for f in self.model.roi_heads.in_features], [pred_boxes])
+                pooled_features = roi_pooler([features[0][f] for f in self.model.roi_heads.in_features], [pred_boxes])
+                roi_features = feature_extractor(pooled_features)
 
-            return predictions, roi_features
+            return predictions['instances'].pred_classes.detach().cpu(), roi_features.detach().cpu()
 
+
+class GTCustomPredictor(DefaultPredictor):
+
+    def __call__(self, original_image):
+        with torch.no_grad():  # https://github.com/sphinx-doc/sphinx/issues/4258
+            # Apply pre-processing to image.
+            [image,height,width,gt] = original_image
+
+            inputs = {"image": image, "height": height, "width": width}
+            
+           
+            def hook(module, input, output):
+                features.append(output)
+                
+            
+            h = self.model.backbone.register_forward_hook(hook)
+            features = []
+            predictions = self.model([inputs])[0]
+            h.remove()
+            # Get detection instances
+            instances = gt
+
+            # Get detected boxes and extract corresponding feature embeddings
+            pred_boxes = instances.get_fields()['gt_boxes'].to('cuda')
+            #instances.pred_boxes  # Prediction boxes (x1, y1, x2, y2)
+            roi_pooler = self.model.roi_heads.box_pooler  # ROI feature extractor
+            feature_extractor = self.model.roi_heads.box_head
+
+            # Convert prediction boxes to proper format for ROI pooling
+            #num_boxes = pred_boxes.shape[0]
+            #box_list = [pred_boxes[i].unsqueeze(dim=0) for i in range(num_boxes)]  # Assign batch index 0 to all boxes
+
+            # Extract feature embeddings from the feature map for each detected box
+            with torch.no_grad():
+                pooled_features = roi_pooler([features[0][f] for f in self.model.roi_heads.in_features], [pred_boxes])
+                roi_features = feature_extractor(pooled_features)
+
+            return instances.get_fields()['gt_classes'], roi_features.detach().cpu()
+        
+
+
+        
 # Load a pretrained Faster R-CNN model from Detectron2 model zoo
 cfg = get_cfg()
+#cfg.merge_from_file("/home/vaibhav/Desktop/stud/configs/BDD100k/stud_resnet.yaml")
 cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml"))  # Use the appropriate config file
+cfg.DATASETS.TRAIN = ("esmart_wip",)
 cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # Set a threshold for post-processing
+#cfg.MODEL.WEIGHTS = "/home/vaibhav/Desktop/stud/models/model_final_resnet_bdd.pth"
 cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml")  # Let training initialize from model zoo
 predictor = CustomPredictor(cfg)
 
 
 
-# Load and preprocess your input image
-input_image = cv2.imread("/home/vaibhav/Desktop/stud/datasets/coco2017/val2017/000000000139.jpg")  # Load your image here
-#input_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)  # Convert to RGB
-#input_tensor = torch.as_tensor(input_image.astype("float32").transpose(2, 0, 1))
 
+
+
+
+register_esmart_wip()
+# Build COCO test data loader
+test_data_loader = build_detection_train_loader(cfg)
 '''
-model = build_model(cfg)
-model.eval()
+    dataset = get_detection_dataset_dicts("esmart_wip"),
+    mapper=None,  # You can provide a custom data mapper here if needed
+    num_workers=1,  # Number of worker threads for data loading
+    total_batch_size=4 
+)'''
 
-# Run inference
-with torch.no_grad():
-    predictions = model([input_tensor])
+fea_path = "/home/vaibhav/Desktop/stud/datasets/esmart/features/pooled"
 
-# Extract features from the feature maps
-pred_boxes = predictions[0]['instances'].pred_boxes.tensor  # Extract feature maps for ROIs
+for batch in test_data_loader:
+    # Process the batch here
+    for im in batch:
+        input = [im['image'],im['height'],im['width'],im['instances']]
+        #{"image": im['image'], "height": im['height'], "width": im['width']}
+        preds, roi_features = predictor(input)
+        with open(os.path.join(fea_path,im['file_name'].split('/')[-1])+".pkl",'wb') as handle:
+            pickle.dump({'preds':preds,'features':roi_features},handle)
 
-feature_extractor = model.roi_heads.box_pooler  # ROI feature extractor
-
-# Convert prediction boxes to proper format for ROI pooling
-num_boxes = pred_boxes.shape[0]
-box_list = [torch.tensor([0] * num_boxes), pred_boxes]  # Assign batch index 0 to all boxes
-
-# Extract ROI feature maps based on the prediction boxes
-roi_features = feature_extractor(
-    [input_tensor], [box_list]
-)
-
-print("here....")
-'''
-preds, roi_features = predictor(input_image)
-print("here....")
