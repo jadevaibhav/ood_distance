@@ -10,6 +10,7 @@ from detectron2.data import build_detection_train_loader,get_detection_dataset_d
 from detectron2.data.datasets import register_coco_instances
 import pickle
 import time
+import wandb
 
 #register dataset
 def register_esmart_wip(root = "/home/vaibhav/Desktop/stud/datasets/esmart/"):
@@ -45,8 +46,10 @@ register_esmart_wip()
 cfg = get_cfg()
 #cfg.merge_from_file("/home/vaibhav/Desktop/stud/configs/BDD100k/stud_resnet.yaml")
 #cfg = model_zoo.get_config(config_path="COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml",trained=True)  # Use the appropriate config file
-cfg.merge_from_file("/home/vaibhav/Desktop/ood_distance/finetune_bigdet_trained.yaml")
-
+cfg.merge_from_file("/home/vaibhav/Desktop/ood_distance/finetune_coco_trained.yaml")
+wandb.init(project="finetune-coco-run-esmart", name = cfg.OUTPUT_DIR.split('/')[-1],
+               #config = args.config_file
+               )
 #cfg.MODEL.WEIGHTS = "/home/vaibhav/Desktop/stud/models/model_final_resnet_bdd.pth"
 trainer = Trainer(cfg)
 trainer.resume_or_load(resume=False)
