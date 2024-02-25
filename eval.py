@@ -23,7 +23,7 @@ from torch import nn
 from detectron2.utils.comm import get_world_size, is_main_process
 from detectron2.utils.logger import log_every_n_seconds
 
-def register_esmart_wip(root = "/home/vaibhav/Desktop/stud/datasets/esmart/"):
+def register_esmart_wip(root = "stud/datasets/esmart/"):
         things_classes = [
                         "bicycle","bus","car","lane","lanes","motorcycle","person",
                         "roadwork_tcd","speed_limit","stop sign", "traffic light",
@@ -153,17 +153,17 @@ register_esmart_wip()
 
 #cfg = model_zoo.get_config(config_path="COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml",trained=True)
 cfg = get_cfg()
-cfg.merge_from_file("/home/vaibhav/Desktop/ood_distance/finetune_coco_trained.yaml")
+cfg.merge_from_file("ood_distance/finetune_bigdet_trained.yaml")
   # Use the appropriate config file
 #cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
 cfg.DATASETS.TEST = ("esmart_wip",)
-cfg.MODEL.WEIGHTS = "/home/vaibhav/Desktop/ood_distance/checkpoints/esmart/coco_finetune_on_esmart/model_final.pth"
+cfg.MODEL.WEIGHTS = "ood_distance/checkpoints/esmart/bigdet_finetune_on_esmart/model_final.pth"
 
 predictor = DefaultPredictor(cfg)
 
 
 # Evaluate the model on the custom dataset
-evaluator = COCOEvaluator("esmart_wip", tasks=("bbox",),  distributed=False, output_dir="./output/coco_on_esmart_original")
+evaluator = COCOEvaluator("esmart_wip", tasks=("bbox",),  distributed=False, output_dir="./output/bigdet_on_esmart_original")
 val_loader = build_detection_test_loader(cfg, "esmart_wip")
 inference_on_dataset(predictor.model, val_loader, evaluator)
 

@@ -14,7 +14,7 @@ import pickle
 # IMP: old version of detectron2 does not support batching in test loader, to run this use a seperate env with latest detectron2
 
 #register dataset
-def register_esmart_wip(root = "/home/vaibhav/Desktop/stud/datasets/esmart/"):
+def register_esmart_wip(root = "stud/datasets/esmart/"):
         things_classes = [
                         "bicycle","bus","car","lane","lanes","motorcycle","person",
                         "roadwork_tcd","speed_limit","stop sign", "traffic light",
@@ -25,7 +25,7 @@ def register_esmart_wip(root = "/home/vaibhav/Desktop/stud/datasets/esmart/"):
         register_coco_instances(
                         name,
                         metadata,
-                        os.path.join(root, 'labels_mod.json'),
+                        os.path.join(root, 'labels.json'),
                         os.path.join(root, 'data/'),
                     )
         
@@ -116,13 +116,13 @@ cfg = get_cfg()
 #cfg.merge_from_file("/home/vaibhav/Desktop/stud/configs/BDD100k/stud_resnet.yaml")
 
 #cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml"))  # Use the appropriate config file
-cfg.merge_from_file("/home/vaibhav/Desktop/ood_distance/finetune_bigdet_trained.yaml")
+cfg.merge_from_file("ood_distance/finetune_bigdet_trained.yaml")
 
 cfg.DATASETS.TRAIN = ("esmart_wip",)
 cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5 
 #cfg.MODEL.ROI_HEADS.NUM_CLASSES = 600 # Set a threshold for post-processing
 #cfg.MODEL.WEIGHTS = "/home/vaibhav/Desktop/stud/models/model_final_resnet_bdd.pth"
-cfg.MODEL.WEIGHTS = "/home/vaibhav/Desktop/ood_distance/checkpoints/esmart/bigdet_finetune_on_esmart/model_final.pth"
+cfg.MODEL.WEIGHTS = "ood_distance/checkpoints/esmart/bigdet_finetune_on_esmart/model_final.pth"
 #"/home/vaibhav/Desktop/ood_distance/checkpoints/esmart/coco_finetune_on_esmart/model_final.pth"
 # #model_zoo.get_checkpoint_url("COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml")  # Let training initialize from model zoo
 predictor = CustomPredictor(cfg)
@@ -138,7 +138,7 @@ test_data_loader = build_detection_train_loader(cfg)
     total_batch_size=4 
 )'''
 
-fea_path = "/home/vaibhav/Desktop/stud/datasets/esmart/bigdetect_features/finetune/pooled"
+fea_path = "ood_distance/checkpoints/esmart/bigdet_features/finetune/pooled"
 
 for batch in test_data_loader:
     # Process the batch here

@@ -1,4 +1,4 @@
-_BASE_: "/home/vaibhav/Desktop/stud/configs/Base-RCNN-FPN.yaml"
+_BASE_: "stud/configs/Base-RCNN-FPN.yaml"
 MODEL:
   BACKBONE:
       FREEZE_AT: 6
@@ -6,12 +6,12 @@ MODEL:
     SCORE_THRESH_TEST: 0.5
     NUM_CLASSES: 12
 
-  WEIGHTS: "/home/vaibhav/Desktop/ood_distance/checkpoints/model_final_b275ba.pkl"
+  WEIGHTS: "ood_distance/checkpoints/model_final_b275ba.pkl"
   #"ood_distance/checkpoints/faster_rcnn_r50_fpn_bigdet_8x.pth"
   #
 
 SOLVER:
-  IMS_PER_BATCH: 4
+  IMS_PER_BATCH: 16
 #   IMS_PER_BATCH: 16
   BASE_LR: 0.02
 #  STEPS: (31200, 41600,)
@@ -28,4 +28,4 @@ INPUT:
 SEED: 34112225
 DATASETS:
   TRAIN: ("esmart_wip",)
-OUTPUT_DIR: "/home/vaibhav/Desktop/ood_distance/checkpoints/esmart/coco_finetune_on_esmart"
+OUTPUT_DIR: "ood_distance/checkpoints/esmart/coco_finetune_on_esmart"

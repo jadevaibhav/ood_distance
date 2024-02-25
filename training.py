@@ -6,14 +6,14 @@ from detectron2.engine import DefaultPredictor, DefaultTrainer
 from detectron2.modeling import build_model
 from detectron2.utils.visualizer import Visualizer
 from detectron2 import model_zoo
-from detectron2.data import build_detection_train_loader,get_detection_dataset_dicts
+from detectron2.data import build_detection_train_loader,get_detection_dataset_dicts,build_detection_test_loader
 from detectron2.data.datasets import register_coco_instances
 import pickle
 import time
-import wandb
+#import wandb
 
 #register dataset
-def register_esmart_wip(root = "/home/vaibhav/Desktop/stud/datasets/esmart/"):
+def register_esmart_wip(root = "stud/datasets/esmart/"):
         things_classes = [
                         "bicycle","bus","car","lane","lanes","motorcycle","person",
                         "roadwork_tcd","speed_limit","stop sign", "traffic light",
@@ -24,7 +24,7 @@ def register_esmart_wip(root = "/home/vaibhav/Desktop/stud/datasets/esmart/"):
         register_coco_instances(
                         name,
                         metadata,
-                        os.path.join(root, 'labels_mod.json'),
+                        os.path.join(root, 'labels.json'),
                         os.path.join(root, 'data/'),
                     )
 
@@ -46,10 +46,10 @@ register_esmart_wip()
 cfg = get_cfg()
 #cfg.merge_from_file("/home/vaibhav/Desktop/stud/configs/BDD100k/stud_resnet.yaml")
 #cfg = model_zoo.get_config(config_path="COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml",trained=True)  # Use the appropriate config file
-cfg.merge_from_file("/home/vaibhav/Desktop/ood_distance/finetune_coco_trained.yaml")
-wandb.init(project="finetune-coco-run-esmart", name = cfg.OUTPUT_DIR.split('/')[-1],
-               #config = args.config_file
-               )
+cfg.merge_from_file("ood_distance/finetune_bigdet_trained.yaml")
+# wandb.init(project="finetune-coco-run-esmart", name = cfg.OUTPUT_DIR.split('/')[-1],
+#                #config = args.config_file
+#                )
 #cfg.MODEL.WEIGHTS = "/home/vaibhav/Desktop/stud/models/model_final_resnet_bdd.pth"
 trainer = Trainer(cfg)
 trainer.resume_or_load(resume=False)

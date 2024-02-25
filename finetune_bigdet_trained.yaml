@@ -1,4 +1,4 @@
-_BASE_: "/home/vaibhav/Desktop/stud/configs/Base-RCNN-FPN.yaml"
+_BASE_: "stud/configs/Base-RCNN-FPN.yaml"
 MODEL:
   BACKBONE:
       FREEZE_AT: 6
@@ -10,15 +10,15 @@ MODEL:
   #"ood_distance/model_final_280758.pkl"
 
 SOLVER:
-  IMS_PER_BATCH: 4
+  IMS_PER_BATCH: 16
 #   IMS_PER_BATCH: 16
   BASE_LR: 0.02
 #  STEPS: (31200, 41600,)
 #  MAX_ITER: 45500
-  STEPS: (3600, 4800,)
-  MAX_ITER: 9001
-  WARMUP_ITERS: 800
-  CHECKPOINT_PERIOD: 1000
+  STEPS: (900, 1200,)
+  MAX_ITER: 2251
+  WARMUP_ITERS: 200
+  CHECKPOINT_PERIOD: 250
 INPUT:
   MIN_SIZE_TRAIN: (800,)
   RANDOM_FLIP: "none"
