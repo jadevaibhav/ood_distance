@@ -38,7 +38,7 @@ class Trainer(DefaultTrainer):
         super().__init__(cfg)
         for param in self.model.backbone.parameters():
              param.requires_grad = False
-        for param in self.model.backbone.parameters():
+        for param in self.model.proposal_generator.parameters():
              param.requires_grad = False
         
 
@@ -46,7 +46,7 @@ register_esmart_wip()
 cfg = get_cfg()
 #cfg.merge_from_file("/home/vaibhav/Desktop/stud/configs/BDD100k/stud_resnet.yaml")
 #cfg = model_zoo.get_config(config_path="COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml",trained=True)  # Use the appropriate config file
-cfg.merge_from_file("ood_distance/finetune_bigdet_trained.yaml")
+cfg.merge_from_file("ood_distance/configs/finetune_coco_trained.yaml")
 # wandb.init(project="finetune-coco-run-esmart", name = cfg.OUTPUT_DIR.split('/')[-1],
 #                #config = args.config_file
 #                )

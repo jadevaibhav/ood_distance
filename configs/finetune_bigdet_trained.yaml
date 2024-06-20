@@ -1,0 +1,30 @@
+_BASE_: "Base-RCNN-FPN.yaml"
+MODEL:
+  BACKBONE:
+      FREEZE_AT: 6
+  ROI_HEADS:
+    SCORE_THRESH_TEST: 0.5
+    NUM_CLASSES: 12
+  
+  WEIGHTS: "ood_distance/checkpoints/faster_rcnn_r50_fpn_bigdet_8x.pth"
+  #"ood_distance/model_final_280758.pkl"
+
+SOLVER:
+  IMS_PER_BATCH: 16
+#   IMS_PER_BATCH: 16
+  BASE_LR: 0.02
+#  STEPS: (31200, 41600,)
+#  MAX_ITER: 45500
+  STEPS: (3600, 4800,)
+  MAX_ITER: 9001
+  WARMUP_ITERS: 800
+  CHECKPOINT_PERIOD: 1000
+INPUT:
+  MIN_SIZE_TRAIN: (800,)
+  RANDOM_FLIP: "none"
+  CROP:
+    ENABLED: True
+SEED: 34112225
+DATASETS:
+  TRAIN: ("esmart_wip",)
+OUTPUT_DIR: "ood_distance/checkpoints/esmart/bigdet_finetune_on_esmart"

@@ -106,7 +106,7 @@ class GTCustomPredictor(DefaultPredictor):
                 pooled_features = roi_pooler([features[0][f] for f in self.model.roi_heads.in_features], [pred_boxes])
                 roi_features = feature_extractor(pooled_features)
 
-            return instances.get_fields()['gt_classes'], roi_features.detach().cpu()
+            return instances.get_fields()['gt_classes'], roi_features.detach().cpu(), pooled_features.detach().cpu()
         
 
 
@@ -116,16 +116,16 @@ cfg = get_cfg()
 #cfg.merge_from_file("/home/vaibhav/Desktop/stud/configs/BDD100k/stud_resnet.yaml")
 
 #cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml"))  # Use the appropriate config file
-cfg.merge_from_file("ood_distance/finetune_bigdet_trained.yaml")
+cfg.merge_from_file("ood_distance/configs/finetune_coco_trained.yaml")
 
 cfg.DATASETS.TRAIN = ("esmart_wip",)
 cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5 
 #cfg.MODEL.ROI_HEADS.NUM_CLASSES = 600 # Set a threshold for post-processing
 #cfg.MODEL.WEIGHTS = "/home/vaibhav/Desktop/stud/models/model_final_resnet_bdd.pth"
-cfg.MODEL.WEIGHTS = "ood_distance/checkpoints/esmart/bigdet_finetune_on_esmart/model_final.pth"
+cfg.MODEL.WEIGHTS = "ood_distance/checkpoints/esmart/coco_finetune_on_esmart/model_final.pth"
 #"/home/vaibhav/Desktop/ood_distance/checkpoints/esmart/coco_finetune_on_esmart/model_final.pth"
 # #model_zoo.get_checkpoint_url("COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml")  # Let training initialize from model zoo
-predictor = CustomPredictor(cfg)
+predictor = GTCustomPredictor(cfg)
 
 
 register_esmart_wip()
@@ -138,14 +138,16 @@ test_data_loader = build_detection_train_loader(cfg)
     total_batch_size=4 
 )'''
 
-fea_path = "ood_distance/checkpoints/esmart/bigdet_features/finetune/pooled"
-
+fea_pool_path = "ood_distance/checkpoints/esmart/coco_features/gt/pooled"
+fea_box_path = "ood_distance/checkpoints/esmart/coco_features/gt/box"
 for batch in test_data_loader:
     # Process the batch here
     for im in batch:
         input = [im['image'],im['height'],im['width'],im['instances']]
         #{"image": im['image'], "height": im['height'], "width": im['width']}
-        preds, roi_features = predictor(input)
-        with open(os.path.join(fea_path,im['file_name'].split('/')[-1])+".pkl",'wb') as handle:
-            pickle.dump({'preds':preds,'features':roi_features},handle)
+        preds, box_features, pooled_features = predictor(input)
+        with open(os.path.join(fea_box_path,im['file_name'].split('/')[-1])+".pkl",'wb') as handle:
+            pickle.dump({'preds':preds,'features':box_features},handle)
+        with open(os.path.join(fea_pool_path,im['file_name'].split('/')[-1])+".pkl",'wb') as handle:
+            pickle.dump({'preds':preds,'features':pooled_features},handle)
 
